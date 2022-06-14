@@ -1,0 +1,568 @@
+<html>
+  <meta charset="utf-8">
+  <head>
+    <style>
+    #mols2grid.gridcontainer {
+    display: block;
+    padding-left: 1em;
+    max-width: 1096px;
+    width: 1096px;
+}
+#mols2grid .cell {
+    border: 1px solid #cccccc;
+    text-align: center;
+    vertical-align: top;
+    max-width: 270px;
+    width: 270px;
+    font-family: 'DejaVu', sans-serif;
+    font-size: 16pt;
+    padding: 0;
+    margin: 0px;
+    float: left;
+}
+#mols2grid .cell:hover {
+    background-color: #e3c7cb !important;
+}
+#mols2grid .cell .data-img {
+    padding: 0;
+    margin: 0;
+}
+#mols2grid .cell img, #mols2grid .cell svg {
+    max-width: 100%;
+    height: auto;
+    padding: 0;
+}
+#mols2grid .data {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: block;
+}
+#mols2grid .arrow-asc:after {
+    content: '↑';
+    text-align: right;
+    float:right;
+}
+#mols2grid .arrow-desc:after {
+    content: '↓';
+    text-align: right;
+    float:right;
+}
+    /* custom CSS */
+    
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@rdkit/rdkit@2022.3.1/Code/MinimalLib/dist/RDKit_minimal.js"></script>
+    <!-- custom header -->
+    
+  </head>
+  <body>
+    <div id="mols2grid" class="gridcontainer grid-default">
+      <div class="row mb-3">
+        <div class="list"><div class="cell" data-mols2grid-id="0"><input type="checkbox" class="position-relative float-left cached_checkbox"><div class="data data-Name"></div><a tabindex="0" class="data data-img mols2grid-tooltip" data-toggle="popover" data-content="."></a><div class="data data-IUPAC" style="display: none;"></div><div class="data data-SMILES" style="display: none;"></div></div></div>
+      </div>
+      <div class="d-inline">
+        <ul class="pagination float-left"></ul>
+        <div id="controls" class="d-flex flex-row float-right">
+          
+          <div id="chkbox-dropdown" class="dropdown">
+    <button class="btn btn-light dropdown-toggle" type="button" id="chkboxDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">☑</button>
+    <div class="dropdown-menu" aria-labelledby="checkboxDropdownMenu">
+        <button id="btn-chkbox-all" class="dropdown-item" type="button">Check all</button>
+        <button id="btn-chkbox-match" class="dropdown-item" type="button">Check matching</button>
+        <button id="btn-chkbox-none" class="dropdown-item" type="button">Uncheck all</button>
+        <button id="btn-chkbox-invert" class="dropdown-item" type="button">Invert</button>
+        <div class="dropdown-divider"></div>
+        <button id="btn-chkbox-copy" class="dropdown-item" type="button">Copy to clipboard</button>
+        <button id="btn-chkbox-dlsmi" class="dropdown-item" type="button">Save SMILES</button>
+        <button id="btn-chkbox-dlcsv" class="dropdown-item" type="button">Save CSV</button>
+    </div>
+</div>
+          
+          <div id="sort-dropdown" class="dropdown pl-2">
+            <button class="btn btn-light dropdown-toggle" type="button" id="sortDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Sort by
+            </button>
+            <div class="dropdown-menu" aria-labelledby="sortDropdownMenu">
+              
+              
+              
+              
+              
+              <button class="dropdown-item sort-btn " type="button" data-name="mols2grid-id">Index</button>
+              
+              
+              
+              
+              
+              <button class="dropdown-item sort-btn arrow-asc active" type="button" data-name="data-Name">Name</button>
+              
+              
+              
+              
+              
+              <button class="dropdown-item sort-btn " type="button" data-name="data-IUPAC">IUPAC</button>
+              
+              
+              
+              
+              
+              <button class="dropdown-item sort-btn " type="button" data-name="data-SMILES">SMILES</button>
+              
+              
+              
+              <button class="dropdown-item sort-btn" type="button" data-name="checkbox">Selected</button>
+              
+            </div>
+          </div>
+          <div class="input-group row pl-4">
+            <input type="text" id="searchbar" class="form-control" placeholder="Search" aria-label="Search" aria-describedby="basic-addon1">
+            <div class="input-group-append">
+              <button id="searchBtn" class="btn btn-light dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">🔎</button>
+              <div class="dropdown-menu dropdown-menu-right">
+                <button id="txtSearch" class="search-btn dropdown-item active">Text</button>
+                <button id="smartsSearch" class="search-btn dropdown-item">SMARTS</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+    // list.js
+var listObj = new List('mols2grid', {
+    valueNames: [{data: ['mols2grid-id']}, 'data-img', 'data-SMILES', 'data-Name', 'data-IUPAC', {attr: 'data-content', name: 'mols2grid-tooltip'}],
+    item: '<div class="cell" data-mols2grid-id="0"><input type="checkbox" class="position-relative float-left cached_checkbox"><div class="data data-Name"></div><a tabindex="0" class="data data-img mols2grid-tooltip" data-toggle="popover" data-content="."></a><div class="data data-IUPAC" style="display: none;"></div><div class="data data-SMILES" style="display: none;"></div></div>',
+    page: 12,
+    pagination: {
+        name: "pagination",
+        item: '<li class="page-item"><a class="page page-link" href="#" onclick="event.preventDefault()"></a></li>',
+        innerWindow: 1,
+        outerWindow: 1,
+    },
+});
+listObj.remove("mols2grid-id", "0");
+listObj.add([{"data-img": null, "mols2grid-id": 2, "data-Name": "127779-20-8", "data-IUPAC": "n-[4-[3-(tert-butylcarbamoyl)-3,4,4a,5,6,7,8,8a-octahydro-1h-isoquinolin-2-yl]-3-hydroxy-1-phenylbutan-2-yl]-2-(quinoline-2-carbonylamino)butanediamide", "data-SMILES": "CC(C)(C)NC(=O)C1CC2CCCCC2CN1CC(O)C(Cc1ccccc1)NC(=O)C(CC(N)=O)NC(=O)c1ccc2ccccc2n1", "mols2grid-tooltip": "<strong>IUPAC</strong>: n-[4-[3-(tert-butylcarbamoyl)-3,4,4a,5,6,7,8,8a-octahydro-1h-isoquinolin-2-yl]-3-hydroxy-1-phenylbutan-2-yl]-2-(quinoline-2-carbonylamino)butanediamide<br><strong>SMILES</strong>: CC(C)(C)NC(=O)C1CC2CCCCC2CN1CC(O)C(Cc1ccccc1)NC(=O)C(CC(N)=O)NC(=O)c1ccc2ccccc2n1"}, {"data-img": null, "mols2grid-id": 11, "data-Name": "129618-40-2", "data-IUPAC": "2-cyclopropyl-7-methyl-2,4,9,15-tetrazatricyclo[9.4.0.03,8]pentadeca-1(11),3,5,7,12,14-hexaen-10-one", "data-SMILES": "Cc1ccnc2c1NC(=O)c1cccnc1N2C1CC1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 2-cyclopropyl-7-methyl-2,4,9,15-tetrazatricyclo[9.4.0.03,8]pentadeca-1(11),3,5,7,12,14-hexaen-10-one<br><strong>SMILES</strong>: Cc1ccnc2c1NC(=O)c1cccnc1N2C1CC1"}, {"data-img": null, "mols2grid-id": 18, "data-Name": "174484-81-2", "data-IUPAC": "n-[3-[1-[4-hydroxy-6-oxo-2-(2-phenylethyl)-2-propyl-3h-pyran-5-yl]propyl]phenyl]-5-(trifluoromethyl)pyridine-2-sulfonamide", "data-SMILES": "CCCC1(CCc2ccccc2)CC(O)=C(C(CC)c2cccc(NS(=O)(=O)c3ccc(C(F)(F)F)cn3)c2)C(=O)O1", "mols2grid-tooltip": "<strong>IUPAC</strong>: n-[3-[1-[4-hydroxy-6-oxo-2-(2-phenylethyl)-2-propyl-3h-pyran-5-yl]propyl]phenyl]-5-(trifluoromethyl)pyridine-2-sulfonamide<br><strong>SMILES</strong>: CCCC1(CCc2ccccc2)CC(O)=C(C(CC)c2cccc(NS(=O)(=O)c3ccc(C(F)(F)F)cn3)c2)C(=O)O1"}, {"data-img": null, "mols2grid-id": 26, "data-Name": "394730-60-0", "data-IUPAC": "n-(4-amino-1-cyclobutyl-3,4-dioxobutan-2-yl)-3-[2-(tert-butylcarbamoylamino)-3,3-dimethylbutanoyl]-6,6-dimethyl-3-azabicyclo[3.1.0]hexane-2-carboxamide", "data-SMILES": "CC(C)(C)NC(=O)NC(C(=O)N1CC2C(C1C(=O)NC(CC1CCC1)C(=O)C(N)=O)C2(C)C)C(C)(C)C", "mols2grid-tooltip": "<strong>IUPAC</strong>: n-(4-amino-1-cyclobutyl-3,4-dioxobutan-2-yl)-3-[2-(tert-butylcarbamoylamino)-3,3-dimethylbutanoyl]-6,6-dimethyl-3-azabicyclo[3.1.0]hexane-2-carboxamide<br><strong>SMILES</strong>: CC(C)(C)NC(=O)NC(C(=O)N1CC2C(C1C(=O)NC(CC1CCC1)C(=O)C(N)=O)C2(C)C)C(C)(C)C"}, {"data-img": null, "mols2grid-id": 4, "data-Name": "aciclovir", "data-IUPAC": "2-amino-9-(2-hydroxyethoxymethyl)-3h-purin-6-one", "data-SMILES": "Nc1nc(=O)c2ncn(COCCO)c2[nH]1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 2-amino-9-(2-hydroxyethoxymethyl)-3h-purin-6-one<br><strong>SMILES</strong>: Nc1nc(=O)c2ncn(COCCO)c2[nH]1"}, {"data-img": null, "mols2grid-id": 16, "data-Name": "adefovir dipivoxil", "data-IUPAC": "[2-(6-aminopurin-9-yl)ethoxymethyl-(2,2-dimethylpropanoyloxymethoxy)phosphoryl]oxymethyl 2,2-dimethylpropanoate", "data-SMILES": "CC(C)(C)C(=O)OCOP(=O)(COCCn1cnc2c(N)ncnc21)OCOC(=O)C(C)(C)C", "mols2grid-tooltip": "<strong>IUPAC</strong>: [2-(6-aminopurin-9-yl)ethoxymethyl-(2,2-dimethylpropanoyloxymethoxy)phosphoryl]oxymethyl 2,2-dimethylpropanoate<br><strong>SMILES</strong>: CC(C)(C)C(=O)OCOP(=O)(COCCn1cnc2c(N)ncnc21)OCOC(=O)C(C)(C)C"}, {"data-img": null, "mols2grid-id": 20, "data-Name": "arbidol", "data-IUPAC": "ethyl 6-bromo-4-[(dimethylamino)methyl]-5-hydroxy-1-methyl-2-(phenylsulfanylmethyl)indole-3-carboxylate", "data-SMILES": "CCOC(=O)c1c(CSc2ccccc2)n(C)c2cc(Br)c(O)c(CN(C)C)c12", "mols2grid-tooltip": "<strong>IUPAC</strong>: ethyl 6-bromo-4-[(dimethylamino)methyl]-5-hydroxy-1-methyl-2-(phenylsulfanylmethyl)indole-3-carboxylate<br><strong>SMILES</strong>: CCOC(=O)c1c(CSc2ccccc2)n(C)c2cc(Br)c(O)c(CN(C)C)c12"}, {"data-img": null, "mols2grid-id": 30, "data-Name": "atazanavir", "data-IUPAC": "methyl n-[1-[2-[2-hydroxy-3-[[2-(methoxycarbonylamino)-3,3-dimethylbutanoyl]amino]-4-phenylbutyl]-2-[(4-pyridin-2-ylphenyl)methyl]hydrazinyl]-3,3-dimethyl-1-oxobutan-2-yl]carbamate", "data-SMILES": "COC(=O)NC(C(=O)NC(Cc1ccccc1)C(O)CN(Cc1ccc(-c2ccccn2)cc1)NC(=O)C(NC(=O)OC)C(C)(C)C)C(C)(C)C", "mols2grid-tooltip": "<strong>IUPAC</strong>: methyl n-[1-[2-[2-hydroxy-3-[[2-(methoxycarbonylamino)-3,3-dimethylbutanoyl]amino]-4-phenylbutyl]-2-[(4-pyridin-2-ylphenyl)methyl]hydrazinyl]-3,3-dimethyl-1-oxobutan-2-yl]carbamate<br><strong>SMILES</strong>: COC(=O)NC(C(=O)NC(Cc1ccccc1)C(O)CN(Cc1ccc(-c2ccccn2)cc1)NC(=O)C(NC(=O)OC)C(C)(C)C)C(C)(C)C"}, {"data-img": null, "mols2grid-id": 23, "data-Name": "brivudine", "data-IUPAC": "5-(2-bromoethenyl)-1-[4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]pyrimidine-2,4-dione", "data-SMILES": "O=c1[nH]c(=O)n(C2CC(O)C(CO)O2)cc1C=CBr", "mols2grid-tooltip": "<strong>IUPAC</strong>: 5-(2-bromoethenyl)-1-[4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]pyrimidine-2,4-dione<br><strong>SMILES</strong>: O=c1[nH]c(=O)n(C2CC(O)C(CO)O2)cc1C=CBr"}, {"data-img": null, "mols2grid-id": 9, "data-Name": "chembl195725", "data-IUPAC": "oxolan-3-yl n-[4-[(4-aminophenyl)sulfonyl-(2-methylpropyl)amino]-3-hydroxy-1-phenylbutan-2-yl]carbamate", "data-SMILES": "CC(C)CN(CC(O)C(Cc1ccccc1)NC(=O)OC1CCOC1)S(=O)(=O)c1ccc(N)cc1", "mols2grid-tooltip": "<strong>IUPAC</strong>: oxolan-3-yl n-[4-[(4-aminophenyl)sulfonyl-(2-methylpropyl)amino]-3-hydroxy-1-phenylbutan-2-yl]carbamate<br><strong>SMILES</strong>: CC(C)CN(CC(O)C(Cc1ccccc1)NC(=O)OC1CCOC1)S(=O)(=O)c1ccc(N)cc1"}, {"data-img": null, "mols2grid-id": 27, "data-Name": "darunavir", "data-IUPAC": "2,3,3a,4,5,6a-hexahydrofuro[2,3-b]furan-4-yl n-[4-[(4-aminophenyl)sulfonyl-(2-methylpropyl)amino]-3-hydroxy-1-phenylbutan-2-yl]carbamate", "data-SMILES": "CC(C)CN(CC(O)C(Cc1ccccc1)NC(=O)OC1COC2OCCC12)S(=O)(=O)c1ccc(N)cc1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 2,3,3a,4,5,6a-hexahydrofuro[2,3-b]furan-4-yl n-[4-[(4-aminophenyl)sulfonyl-(2-methylpropyl)amino]-3-hydroxy-1-phenylbutan-2-yl]carbamate<br><strong>SMILES</strong>: CC(C)CN(CC(O)C(Cc1ccccc1)NC(=O)OC1COC2OCCC12)S(=O)(=O)c1ccc(N)cc1"}, {"data-img": null, "mols2grid-id": 0, "data-Name": "didanosine", "data-IUPAC": "9-[5-(hydroxymethyl)oxolan-2-yl]-1h-purin-6-one", "data-SMILES": "O=c1[nH]cnc2c1ncn2C1CCC(CO)O1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 9-[5-(hydroxymethyl)oxolan-2-yl]-1h-purin-6-one<br><strong>SMILES</strong>: O=c1[nH]cnc2c1ncn2C1CCC(CO)O1"}, {"data-img": null, "mols2grid-id": 12, "data-Name": "doxorubicin", "data-IUPAC": "n-[2-[4-[3-(propan-2-ylamino)pyridin-2-yl]piperazine-1-carbonyl]-1h-indol-5-yl]methanesulfonamide", "data-SMILES": "CC(C)Nc1cccnc1N1CCN(C(=O)c2cc3cc(NS(C)(=O)=O)ccc3[nH]2)CC1", "mols2grid-tooltip": "<strong>IUPAC</strong>: n-[2-[4-[3-(propan-2-ylamino)pyridin-2-yl]piperazine-1-carbonyl]-1h-indol-5-yl]methanesulfonamide<br><strong>SMILES</strong>: CC(C)Nc1cccnc1N1CCN(C(=O)c2cc3cc(NS(C)(=O)=O)ccc3[nH]2)CC1"}, {"data-img": null, "mols2grid-id": 15, "data-Name": "efavirenz", "data-IUPAC": "6-chloro-4-(2-cyclopropylethynyl)-4-(trifluoromethyl)-1h-3,1-benzoxazin-2-one", "data-SMILES": "O=C1Nc2ccc(Cl)cc2C(C#CC2CC2)(C(F)(F)F)O1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 6-chloro-4-(2-cyclopropylethynyl)-4-(trifluoromethyl)-1h-3,1-benzoxazin-2-one<br><strong>SMILES</strong>: O=C1Nc2ccc(Cl)cc2C(C#CC2CC2)(C(F)(F)F)O1"}, {"data-img": null, "mols2grid-id": 24, "data-Name": "entecavir", "data-IUPAC": "2-amino-9-[4-hydroxy-3-(hydroxymethyl)-2-methylidenecyclopentyl]-1h-purin-6-one", "data-SMILES": "C=C1C(CO)C(O)CC1n1cnc2c(=O)[nH]c(N)nc21", "mols2grid-tooltip": "<strong>IUPAC</strong>: 2-amino-9-[4-hydroxy-3-(hydroxymethyl)-2-methylidenecyclopentyl]-1h-purin-6-one<br><strong>SMILES</strong>: C=C1C(CO)C(O)CC1n1cnc2c(=O)[nH]c(N)nc21"}, {"data-img": null, "mols2grid-id": 31, "data-Name": "etravirine", "data-IUPAC": "4-[6-amino-5-bromo-2-(4-cyanoanilino)pyrimidin-4-yl]oxy-3,5-dimethylbenzonitrile", "data-SMILES": "Cc1cc(C#N)cc(C)c1Oc1nc(Nc2ccc(C#N)cc2)nc(N)c1Br", "mols2grid-tooltip": "<strong>IUPAC</strong>: 4-[6-amino-5-bromo-2-(4-cyanoanilino)pyrimidin-4-yl]oxy-3,5-dimethylbenzonitrile<br><strong>SMILES</strong>: Cc1cc(C#N)cc(C)c1Oc1nc(Nc2ccc(C#N)cc2)nc(N)c1Br"}, {"data-img": null, "mols2grid-id": 5, "data-Name": "indinavir", "data-IUPAC": "1-[4-benzyl-2-hydroxy-5-[(2-hydroxy-2,3-dihydro-1h-inden-1-yl)amino]-5-oxopentyl]-n-tert-butyl-4-(pyridin-3-ylmethyl)piperazine-2-carboxamide", "data-SMILES": "CC(C)(C)NC(=O)C1CN(Cc2cccnc2)CCN1CC(O)CC(Cc1ccccc1)C(=O)NC1c2ccccc2CC1O", "mols2grid-tooltip": "<strong>IUPAC</strong>: 1-[4-benzyl-2-hydroxy-5-[(2-hydroxy-2,3-dihydro-1h-inden-1-yl)amino]-5-oxopentyl]-n-tert-butyl-4-(pyridin-3-ylmethyl)piperazine-2-carboxamide<br><strong>SMILES</strong>: CC(C)(C)NC(=O)C1CN(Cc2cccnc2)CCN1CC(O)CC(Cc1ccccc1)C(=O)NC1c2ccccc2CC1O"}, {"data-img": null, "mols2grid-id": 33, "data-Name": "maraviroc", "data-IUPAC": "4,4-difluoro-n-[3-[3-(3-methyl-5-propan-2-yl-1,2,4-triazol-4-yl)-8-azabicyclo[3.2.1]octan-8-yl]-1-phenylpropyl]cyclohexane-1-carboxamide", "data-SMILES": "Cc1nnc(C(C)C)n1C1CC2CCC(C1)N2CCC(NC(=O)C1CCC(F)(F)CC1)c1ccccc1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 4,4-difluoro-n-[3-[3-(3-methyl-5-propan-2-yl-1,2,4-triazol-4-yl)-8-azabicyclo[3.2.1]octan-8-yl]-1-phenylpropyl]cyclohexane-1-carboxamide<br><strong>SMILES</strong>: Cc1nnc(C(C)C)n1C1CC2CCC(C1)N2CCC(NC(=O)C1CCC(F)(F)CC1)c1ccccc1"}, {"data-img": null, "mols2grid-id": 14, "data-Name": "mesna", "data-IUPAC": "trisodium;phosphonatoformate", "data-SMILES": "O=C(O)P(=O)(O)O", "mols2grid-tooltip": "<strong>IUPAC</strong>: trisodium;phosphonatoformate<br><strong>SMILES</strong>: O=C(O)P(=O)(O)O"}, {"data-img": null, "mols2grid-id": 21, "data-Name": "mls003373964", "data-IUPAC": "4-amino-1-[2-(hydroxymethyl)-1,3-oxathiolan-5-yl]pyrimidin-2-one", "data-SMILES": "Nc1ccn(C2CSC(CO)O2)c(=O)n1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 4-amino-1-[2-(hydroxymethyl)-1,3-oxathiolan-5-yl]pyrimidin-2-one<br><strong>SMILES</strong>: Nc1ccn(C2CSC(CO)O2)c(=O)n1"}, {"data-img": null, "mols2grid-id": 7, "data-Name": "n-[3-hydroxy-5-[[3-methyl-2-[[[methyl-[(2-propan-2-yl-4-thiazolyl)methyl]amino]-oxomethyl]amino]-1-oxobutyl]amino]-1,6-diphenylhexan-2-yl]carbamic acid 5-thiazolylmethyl ester", "data-IUPAC": "1,3-thiazol-5-ylmethyl n-[3-hydroxy-5-[[3-methyl-2-[[methyl-[(2-propan-2-yl-1,3-thiazol-4-yl)methyl]carbamoyl]amino]butanoyl]amino]-1,6-diphenylhexan-2-yl]carbamate", "data-SMILES": "CC(C)c1nc(CN(C)C(=O)NC(C(=O)NC(Cc2ccccc2)CC(O)C(Cc2ccccc2)NC(=O)OCc2cncs2)C(C)C)cs1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 1,3-thiazol-5-ylmethyl n-[3-hydroxy-5-[[3-methyl-2-[[methyl-[(2-propan-2-yl-1,3-thiazol-4-yl)methyl]carbamoyl]amino]butanoyl]amino]-1,6-diphenylhexan-2-yl]carbamate<br><strong>SMILES</strong>: CC(C)c1nc(CN(C)C(=O)NC(C(=O)NC(Cc2ccccc2)CC(O)C(Cc2ccccc2)NC(=O)OCc2cncs2)C(C)C)cs1"}, {"data-img": null, "mols2grid-id": 3, "data-Name": "nelfinavir mesylate", "data-IUPAC": "n-tert-butyl-2-[2-hydroxy-3-[(3-hydroxy-2-methylbenzoyl)amino]-4-phenylsulfanylbutyl]-3,4,4a,5,6,7,8,8a-octahydro-1h-isoquinoline-3-carboxamide", "data-SMILES": "Cc1c(O)cccc1C(=O)NC(CSc1ccccc1)C(O)CN1CC2CCCCC2CC1C(=O)NC(C)(C)C", "mols2grid-tooltip": "<strong>IUPAC</strong>: n-tert-butyl-2-[2-hydroxy-3-[(3-hydroxy-2-methylbenzoyl)amino]-4-phenylsulfanylbutyl]-3,4,4a,5,6,7,8,8a-octahydro-1h-isoquinoline-3-carboxamide<br><strong>SMILES</strong>: Cc1c(O)cccc1C(=O)NC(CSc1ccccc1)C(O)CN1CC2CCCCC2CC1C(=O)NC(C)(C)C"}, {"data-img": null, "mols2grid-id": 1, "data-Name": "nsc606170", "data-IUPAC": "4-amino-1-[5-(hydroxymethyl)oxolan-2-yl]pyrimidin-2-one", "data-SMILES": "Nc1ccn(C2CCC(CO)O2)c(=O)n1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 4-amino-1-[5-(hydroxymethyl)oxolan-2-yl]pyrimidin-2-one<br><strong>SMILES</strong>: Nc1ccn(C2CCC(CO)O2)c(=O)n1"}, {"data-img": null, "mols2grid-id": 35, "data-Name": "ophthalmadine", "data-IUPAC": "1-[4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]-5-iodopyrimidine-2,4-dione", "data-SMILES": "O=c1[nH]c(=O)n(C2CC(O)C(CO)O2)cc1I", "mols2grid-tooltip": "<strong>IUPAC</strong>: 1-[4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]-5-iodopyrimidine-2,4-dione<br><strong>SMILES</strong>: O=c1[nH]c(=O)n(C2CC(O)C(CO)O2)cc1I"}, {"data-img": null, "mols2grid-id": 13, "data-Name": "ornidazole", "data-IUPAC": "adamantan-1-amine;hydron;chloride", "data-SMILES": "NC12CC3CC(CC(C3)C1)C2", "mols2grid-tooltip": "<strong>IUPAC</strong>: adamantan-1-amine;hydron;chloride<br><strong>SMILES</strong>: NC12CC3CC(CC(C3)C1)C2"}, {"data-img": null, "mols2grid-id": 19, "data-Name": "oseltamivir", "data-IUPAC": "ethyl 4-acetamido-5-amino-3-pentan-3-yloxycyclohexene-1-carboxylate", "data-SMILES": "CCOC(=O)C1=CC(OC(CC)CC)C(NC(C)=O)C(N)C1", "mols2grid-tooltip": "<strong>IUPAC</strong>: ethyl 4-acetamido-5-amino-3-pentan-3-yloxycyclohexene-1-carboxylate<br><strong>SMILES</strong>: CCOC(=O)C1=CC(OC(CC)CC)C(NC(C)=O)C(N)C1"}, {"data-img": null, "mols2grid-id": 22, "data-Name": "racivir", "data-IUPAC": "4-amino-5-fluoro-1-[2-(hydroxymethyl)-1,3-oxathiolan-5-yl]pyrimidin-2-one", "data-SMILES": "Nc1nc(=O)n(C2CSC(CO)O2)cc1F", "mols2grid-tooltip": "<strong>IUPAC</strong>: 4-amino-5-fluoro-1-[2-(hydroxymethyl)-1,3-oxathiolan-5-yl]pyrimidin-2-one<br><strong>SMILES</strong>: Nc1nc(=O)n(C2CSC(CO)O2)cc1F"}, {"data-img": null, "mols2grid-id": 8, "data-Name": "ribavirin", "data-IUPAC": "1-[3,4-dihydroxy-5-(hydroxymethyl)oxolan-2-yl]-1,2,4-triazole-3-carboxamide", "data-SMILES": "NC(=O)c1ncn(C2OC(CO)C(O)C2O)n1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 1-[3,4-dihydroxy-5-(hydroxymethyl)oxolan-2-yl]-1,2,4-triazole-3-carboxamide<br><strong>SMILES</strong>: NC(=O)c1ncn(C2OC(CO)C(O)C2O)n1"}, {"data-img": null, "mols2grid-id": 17, "data-Name": "schembl10264224", "data-IUPAC": "oxolan-3-yl n-[4-[(4-aminophenyl)sulfonyl-(2-methylpropyl)amino]-1-phenyl-3-phosphonooxybutan-2-yl]carbamate", "data-SMILES": "CC(C)CN(CC(OP(=O)(O)O)C(Cc1ccccc1)NC(=O)OC1CCOC1)S(=O)(=O)c1ccc(N)cc1", "mols2grid-tooltip": "<strong>IUPAC</strong>: oxolan-3-yl n-[4-[(4-aminophenyl)sulfonyl-(2-methylpropyl)amino]-1-phenyl-3-phosphonooxybutan-2-yl]carbamate<br><strong>SMILES</strong>: CC(C)CN(CC(OP(=O)(O)O)C(Cc1ccccc1)NC(=O)OC1CCOC1)S(=O)(=O)c1ccc(N)cc1"}, {"data-img": null, "mols2grid-id": 10, "data-Name": "stavudine", "data-IUPAC": "1-[5-(hydroxymethyl)-2,5-dihydrofuran-2-yl]-5-methylpyrimidine-2,4-dione", "data-SMILES": "Cc1cn(C2C=CC(CO)O2)c(=O)[nH]c1=O", "mols2grid-tooltip": "<strong>IUPAC</strong>: 1-[5-(hydroxymethyl)-2,5-dihydrofuran-2-yl]-5-methylpyrimidine-2,4-dione<br><strong>SMILES</strong>: Cc1cn(C2C=CC(CO)O2)c(=O)[nH]c1=O"}, {"data-img": null, "mols2grid-id": 29, "data-Name": "telaprevir", "data-IUPAC": "2-[2-[[2-cyclohexyl-2-(pyrazine-2-carbonylamino)acetyl]amino]-3,3-dimethylbutanoyl]-n-[1-(cyclopropylamino)-1,2-dioxohexan-3-yl]-3,3a,4,5,6,6a-hexahydro-1h-cyclopenta[c]pyrrole-3-carboxamide", "data-SMILES": "CCCC(NC(=O)C1C2CCCC2CN1C(=O)C(NC(=O)C(NC(=O)c1cnccn1)C1CCCCC1)C(C)(C)C)C(=O)C(=O)NC1CC1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 2-[2-[[2-cyclohexyl-2-(pyrazine-2-carbonylamino)acetyl]amino]-3,3-dimethylbutanoyl]-n-[1-(cyclopropylamino)-1,2-dioxohexan-3-yl]-3,3a,4,5,6,6a-hexahydro-1h-cyclopenta[c]pyrrole-3-carboxamide<br><strong>SMILES</strong>: CCCC(NC(=O)C1C2CCCC2CN1C(=O)C(NC(=O)C(NC(=O)c1cnccn1)C1CCCCC1)C(C)(C)C)C(=O)C(=O)NC1CC1"}, {"data-img": null, "mols2grid-id": 32, "data-Name": "telbivudine", "data-IUPAC": "1-[4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]-5-methylpyrimidine-2,4-dione", "data-SMILES": "Cc1cn(C2CC(O)C(CO)O2)c(=O)[nH]c1=O", "mols2grid-tooltip": "<strong>IUPAC</strong>: 1-[4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]-5-methylpyrimidine-2,4-dione<br><strong>SMILES</strong>: Cc1cn(C2CC(O)C(CO)O2)c(=O)[nH]c1=O"}, {"data-img": null, "mols2grid-id": 28, "data-Name": "thiazol-5-ylmethyl (2r,5r)-5-((s)-2-(3-((2-isopropylthiazol-4-yl)methyl)-3-methylureido)-4-morpholinobutanamido)-1,6-diphenylhexan-2-ylcarbamate", "data-IUPAC": "1,3-thiazol-5-ylmethyl n-[5-[[2-[[methyl-[(2-propan-2-yl-1,3-thiazol-4-yl)methyl]carbamoyl]amino]-4-morpholin-4-ylbutanoyl]amino]-1,6-diphenylhexan-2-yl]carbamate", "data-SMILES": "CC(C)c1nc(CN(C)C(=O)NC(CCN2CCOCC2)C(=O)NC(CCC(Cc2ccccc2)NC(=O)OCc2cncs2)Cc2ccccc2)cs1", "mols2grid-tooltip": "<strong>IUPAC</strong>: 1,3-thiazol-5-ylmethyl n-[5-[[2-[[methyl-[(2-propan-2-yl-1,3-thiazol-4-yl)methyl]carbamoyl]amino]-4-morpholin-4-ylbutanoyl]amino]-1,6-diphenylhexan-2-yl]carbamate<br><strong>SMILES</strong>: CC(C)c1nc(CN(C)C(=O)NC(CCN2CCOCC2)C(=O)NC(CCC(Cc2ccccc2)NC(=O)OCc2cncs2)Cc2ccccc2)cs1"}, {"data-img": null, "mols2grid-id": 34, "data-Name": "thymidine,.alpha.,.alpha.-trifluoro-", "data-IUPAC": "1-[4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]-5-(trifluoromethyl)pyrimidine-2,4-dione", "data-SMILES": "O=c1[nH]c(=O)n(C2CC(O)C(CO)O2)cc1C(F)(F)F", "mols2grid-tooltip": "<strong>IUPAC</strong>: 1-[4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]-5-(trifluoromethyl)pyrimidine-2,4-dione<br><strong>SMILES</strong>: O=c1[nH]c(=O)n(C2CC(O)C(CO)O2)cc1C(F)(F)F"}, {"data-img": null, "mols2grid-id": 25, "data-Name": "zanamivir", "data-IUPAC": "3-acetamido-4-(diaminomethylideneamino)-2-(1,2,3-trihydroxypropyl)-3,4-dihydro-2h-pyran-6-carboxylic acid", "data-SMILES": "CC(=O)NC1C(N=C(N)N)C=C(C(=O)O)OC1C(O)C(O)CO", "mols2grid-tooltip": "<strong>IUPAC</strong>: 3-acetamido-4-(diaminomethylideneamino)-2-(1,2,3-trihydroxypropyl)-3,4-dihydro-2h-pyran-6-carboxylic acid<br><strong>SMILES</strong>: CC(=O)NC1C(N=C(N)N)C=C(C(=O)O)OC1C(O)C(O)CO"}, {"data-img": null, "mols2grid-id": 6, "data-Name": "zidovudine", "data-IUPAC": "1-[4-azido-5-(hydroxymethyl)oxolan-2-yl]-5-methylpyrimidine-2,4-dione", "data-SMILES": "Cc1cn(C2CC(N=[N+]=[N-])C(CO)O2)c(=O)[nH]c1=O", "mols2grid-tooltip": "<strong>IUPAC</strong>: 1-[4-azido-5-(hydroxymethyl)oxolan-2-yl]-5-methylpyrimidine-2,4-dione<br><strong>SMILES</strong>: Cc1cn(C2CC(N=[N+]=[N-])C(CO)O2)c(=O)[nH]c1=O"}]);
+// filter
+if (window.parent.mols2grid_lists === undefined) {
+    window.parent.mols2grid_lists = {};
+}
+window.parent.mols2grid_lists["default"] = listObj;
+
+
+// selection
+class MolStorage extends Map {
+    multi_set(_id, _smiles) {
+        for (let i=0; i < _id.length; i++) {
+            this.set(_id[i], _smiles[i]);
+        }
+    }
+    multi_del(_id) {
+        for (let i=0; i < _id.length; i++) {
+            this.delete(_id[i]);
+        };
+    }
+    to_dict() {
+        var content = "{";
+        for (let [key, value] of this) {
+            content += key + ":" + JSON.stringify(value) + ",";
+        }
+        content = content.length > 1 ? content.slice(0, -1) : content;
+        content += "}";
+        return content
+    }
+    download_smi(fileName) {
+        var content = "SMILES index\n";
+        for (let [key, value] of this) {
+            content += value + " " + key + "\n";
+        }
+        var a = document.createElement("a");
+        var file = new Blob([content], {type: "text/plain"});
+        a.href = URL.createObjectURL(file);
+        a.download = fileName;
+        a.click();
+        a.remove();
+    }
+}
+var SELECTION = new MolStorage();
+
+
+
+// kernel
+var kernel_env = null;
+if (window.parent.IPython !== undefined) {
+    // Jupyter notebook
+    kernel_env = "jupyter";
+    var kernel = window.parent.IPython.notebook.kernel;
+    kernel.execute('from mols2grid.select import register as _m2g_reg')
+    function add_selection(grid_id, _id, smiles) {
+        SELECTION.multi_set(_id, smiles);
+        kernel.execute("_m2g_reg.add_selection('"+grid_id+"', "+JSON.stringify(_id)+","+JSON.stringify(smiles)+")");
+    }
+    function del_selection(grid_id, _id) {
+        SELECTION.multi_del(_id);
+        kernel.execute("_m2g_reg.del_selection('"+grid_id+"', "+JSON.stringify(_id)+")");
+    }
+} else if (window.parent.google !== undefined) {
+    // Google colab
+    kernel_env = "colab";
+    var kernel = window.parent.google.colab.kernel;
+    function add_selection(grid_id, _id, smiles) {
+        SELECTION.multi_set(_id, smiles);
+        (async function() {
+        const result = await kernel.invokeFunction('_m2g_reg.add_selection',
+                                                   [grid_id, _id, smiles], {});
+        })();
+    }
+    function del_selection(grid_id, _id) {
+        SELECTION.multi_del(_id);
+        (async function() {
+        const result = await kernel.invokeFunction('_m2g_reg.del_selection',
+                                                   [grid_id, _id], {});
+        })();
+    }
+} else {
+    function add_selection(grid_id, _id, smiles) {
+        SELECTION.multi_set(_id, smiles);
+    }
+    function del_selection(grid_id, _id) {
+        SELECTION.multi_del(_id);
+    }
+}
+
+
+
+
+// sort
+var sort_field = "data-Name";
+var sort_order = "asc";
+function mols2gridSortFunction(itemA, itemB, options) {
+    var x = itemA.values()[options.valueName];
+    var y = itemB.values()[options.valueName];
+    if (typeof x === "number") {
+        if (isFinite(x - y)) {
+            return x - y; 
+        } else {
+            return isFinite(x) ? -1 : 1;
+        }
+    } else {
+        x = x.toLowerCase();
+        y = y.toLowerCase();
+        return (x < y) ? -1: (x > y) ? 1: 0;
+    }
+}
+function checkboxSort(itemA, itemB, options) {
+    if (itemA.elm !== undefined) {
+        var checkedA = itemA.elm.firstChild.checked;
+        if (itemB.elm !== undefined) {
+            var checkedB = itemB.elm.firstChild.checked;
+            if (checkedA && !checkedB) {
+                return -1;
+            } else if (!checkedA && checkedB) {
+                return 1;
+            } else {
+                return 0;
+            }
+        } else {
+            return -1;
+        }
+    } else if (itemB.elm !== undefined) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+$('#mols2grid button.sort-btn').click(function(e) {
+    var _field = $(this).attr("data-name");
+    if (_field == sort_field) {
+        $(this).removeClass("arrow-" + sort_order)
+        sort_order = (sort_order === "desc") ? "asc" : "desc";
+    } else {
+        $('#mols2grid button.sort-btn.active').removeClass("active arrow-" + sort_order);
+        sort_order = "asc";
+        sort_field = _field;
+        $(this).addClass("active");
+    }
+    $(this).addClass("arrow-" + sort_order)
+    if (sort_field == "checkbox") {
+        listObj.sort("mols2grid-id", {order: sort_order, sortFunction: checkboxSort});
+    } else {
+        listObj.sort(_field, {order: sort_order, sortFunction: mols2gridSortFunction});
+    }
+});
+
+
+
+
+// tooltips
+$.fn.tooltip.Constructor.Default.whiteList.span = ['style']
+listObj.on("updated", function (list) {
+    $(function () {
+        // hide previous popovers
+        $('#mols2grid a.page-link').click(function(e) {
+            $('.mols2grid-tooltip[data-toggle="popover"]').popover('hide')
+        });
+        // create new popover
+        $('.mols2grid-tooltip[data-toggle="popover"]').popover({
+            placement: 'bottom',
+            trigger: 'click hover',
+            html: true,
+            sanitize: false,
+        });
+    })
+});
+
+
+
+// selection modifyers and export options
+// check all
+$('#btn-chkbox-all').click(function (e) {
+    var _id = [];
+    var _smiles = [];
+    listObj.items.forEach(function (item) {
+        if (item.elm) {
+            item.elm.getElementsByTagName("input")[0].checked = true;
+        } else {
+            item.show()
+            item.elm.getElementsByTagName("input")[0].checked = true;
+            item.hide()
+        }
+        _id.push(item.values()["mols2grid-id"]);
+        _smiles.push(item.values()["data-SMILES"]);
+    });
+    add_selection("default", _id, _smiles);
+});
+// check matching
+$('#btn-chkbox-match').click(function (e) {
+    var _id = [];
+    var _smiles = [];
+    listObj.matchingItems.forEach(function (item) {
+        if (item.elm) {
+            item.elm.getElementsByTagName("input")[0].checked = true;
+        } else {
+            item.show()
+            item.elm.getElementsByTagName("input")[0].checked = true;
+            item.hide()
+        }
+        _id.push(item.values()["mols2grid-id"]);
+        _smiles.push(item.values()["data-SMILES"]);
+    });
+    add_selection("default", _id, _smiles);
+});
+// uncheck all
+$('#btn-chkbox-none').click(function (e) {
+    var _id = [];
+    listObj.items.forEach(function (item) {
+        if (item.elm) {
+            item.elm.getElementsByTagName("input")[0].checked = false;
+        } else {
+            item.show()
+            item.elm.getElementsByTagName("input")[0].checked = false;
+            item.hide()
+        }
+        _id.push(item.values()["mols2grid-id"]);
+    });
+    del_selection("default", _id);
+});
+// invert
+$('#btn-chkbox-invert').click(function (e) {
+    var _id_add = [];
+    var _id_del = [];
+    var _smiles = [];
+    listObj.items.forEach(function (item) {
+        if (item.elm) {
+            var chkbox = item.elm.getElementsByTagName("input")[0]
+            chkbox.checked = !chkbox.checked;
+        } else {
+            item.show()
+            var chkbox = item.elm.getElementsByTagName("input")[0]
+            chkbox.checked = !chkbox.checked;
+            item.hide()
+        }
+        if (chkbox.checked) {
+            _id_add.push(item.values()["mols2grid-id"]);
+            _smiles.push(item.values()["data-SMILES"]);
+        } else {
+            _id_del.push(item.values()["mols2grid-id"]);
+        }
+    });
+    del_selection("default", _id_del);
+    add_selection("default", _id_add, _smiles);
+});
+// copy to clipboard
+$("#btn-chkbox-copy").click(function(e) {
+    navigator.clipboard.writeText(SELECTION.to_dict());
+});
+// export smiles
+$("#btn-chkbox-dlsmi").click(function(e) {
+    SELECTION.download_smi("selection.smi");
+});
+// export CSV
+$("#btn-chkbox-dlcsv").click(function(e) {
+    var sep = "\t"
+    // same order as subset + tooltip
+    var columns = Array.from(listObj.items[0].elm.querySelectorAll("div.data"))
+                       .map(elm => elm.classList[1]);
+    // remove 'data-'
+    var header = columns.map(name => name.slice(5));
+    // csv content
+    header = ["index"].concat(header).join(sep);
+    var content = header + "\n";
+    for (let [index, smiles] of SELECTION.entries()) {
+        var data = listObj.items[index].values();
+        content += index;
+        columns.forEach((key) => {
+            content += sep + data[key];
+        })
+        content += "\n";
+    }
+    var a = document.createElement("a");
+    var file = new Blob([content], {type: "text/csv"});
+    a.href = URL.createObjectURL(file);
+    a.download = "selection.csv";
+    a.click();
+    a.remove();
+});
+// update selection on checkbox click
+listObj.on("updated", function (list) {
+    $("input:checkbox").change(function() {
+        var _id = parseInt($(this).closest(".cell").attr("data-mols2grid-id"));
+        if (this.checked) {
+            var _smiles = $($(this).siblings(".data-SMILES")[0]).text();
+            add_selection("default", [_id], [_smiles]);
+        } else {
+            del_selection("default", [_id]);
+        }
+    }); 
+});
+
+
+
+
+
+// generate images for the currently displayed molecules
+var draw_opts = {"fixedBondLength": 30, "width": 270, "height": 140};
+var json_draw_opts = JSON.stringify(draw_opts);
+
+var smarts_matches = {};
+
+// Load RDKit
+window
+.initRDKitModule()
+.then(function(RDKit) {
+    console.log('RDKit version: ', RDKit.version());
+    window.RDKit = RDKit;
+    window.RDKitModule = RDKit;
+
+    // search bar
+    function SmartsSearch(query, columns) {
+    var smiles_col = columns[0];
+    smarts_matches = {};
+    var query = $('#mols2grid #searchbar').val();
+    var qmol = RDKit.get_qmol(query);
+    if (qmol.is_valid()) {
+        listObj.items.forEach(function (item) {
+            var smiles = item.values()[smiles_col]
+            var mol = RDKit.get_mol(smiles, '{"removeHs": false }');
+            if (mol.is_valid()) {
+                var results = mol.get_substruct_matches(qmol);
+                if (results === "\{\}") {
+                    item.found = false;
+                } else {
+                    item.found = true;
+                    
+                    results = JSON.parse(results);
+                    
+                    var highlights = {"atoms": [], "bonds": []};
+                    results.forEach(function (match) {
+                        highlights["atoms"].push(...match.atoms)
+                        highlights["bonds"].push(...match.bonds)
+                    });
+                    
+                    var index = item.values()["mols2grid-id"];
+                    smarts_matches[index] = highlights;
+                    
+                }
+            } else {
+                item.found = false;
+            }
+            mol.delete();
+        });
+    }
+    qmol.delete();
+}
+var search_type = "Text";
+$('#mols2grid .search-btn').click(function() {
+    search_type = $(this).text();
+    $('#mols2grid button.search-btn.active').removeClass("active");
+    $(this).addClass("active");
+});
+$('#mols2grid #searchbar').on("keyup", function(e) {
+    var query = e.target.value;
+    if (search_type === "Text") {
+        smarts_matches = {};
+        listObj.search(query, ['data-Name', 'data-IUPAC', 'data-SMILES']);
+    } else {
+        listObj.search(query, ["data-SMILES"], SmartsSearch);
+    }
+});
+
+    
+    // generate images for the currently displayed molecules
+RDKit.prefer_coordgen(true);
+function draw_mol(smiles, index, template_mol) {
+    var mol = RDKit.get_mol(smiles, '{"removeHs": false }');
+    var svg = "";
+    if (mol.is_valid()) {
+        var highlights = smarts_matches[index];
+        if (highlights) {
+            var details = Object.assign({}, draw_opts, highlights);
+            details = JSON.stringify(details);
+            mol.generate_aligned_coords(template_mol, true);
+        } else {
+            var details = json_draw_opts;
+        }
+        svg = mol.get_svg_with_highlights(details);
+    }
+    mol.delete();
+    if (svg == "") {
+        return '<svg width="270" height="140" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 270 140"></svg>';
+    }
+    return svg;
+}
+listObj.on("updated", function (list) {
+    var query = $('#mols2grid #searchbar').val();
+    var template_mol;
+    if (query === "") {
+        smarts_matches = {};
+        template_mol = null;
+    } else {
+        template_mol = RDKit.get_qmol(query);
+        template_mol.set_new_coords(true);
+    }
+    $('#mols2grid .cell').each(function() {
+        var $t = $(this);
+        var smiles = $t.children(".data-SMILES").first().text();
+        var index = parseInt(this.getAttribute("data-mols2grid-id"));
+        var svg = draw_mol(smiles, index, template_mol);
+        $t.children(".data-img").html(svg);
+    });
+    if (template_mol) {
+        template_mol.delete();
+    }
+});
+    
+
+    // trigger update to activate tooltips, draw images, setup callbacks...
+    listObj.update();
+    // resize iframe to fit content
+    if (window.frameElement) {
+        window.parent.fit_height(window.frameElement);
+    }
+});
+    </script>
+  </body>
+</html>
