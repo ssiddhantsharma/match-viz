@@ -1,2 +1,2 @@
 # match-viz
-Some experiments in visualising data: https://tmap.gdb.tools/
+Some experiments in visualizing data: https://tmap.gdb.tools/
